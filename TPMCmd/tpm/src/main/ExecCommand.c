@@ -42,6 +42,7 @@
 #include "Tpm.h"
 #include "Marshal.h"
 #include "ExecCommand_fp.h"
+#include <stdio.h>  // TODO: remove [DEBUG]
 
 // Uncomment this next #include if doing static command/response buffer sizing
 // #include "CommandResponseSizes_fp.h"
@@ -145,13 +146,27 @@ LIB_EXPORT void ExecuteCommand(
     // that it is either TPM_ST_SESSIONS or TPM_ST_NO_SESSIONS.
     result = TPMI_ST_COMMAND_TAG_Unmarshal(
         &command.tag, &command.parameterBuffer, &command.parameterSize);
+    printf("\nExecuting command...\n");  // TODO: remove [DEBUG]
+    printf("\nResult=%d\n", result);     // TODO: remove [DEBUG]
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 1\n");  // TODO: remove [DEBUG]
         goto Cleanup;
+    }
     // Unmarshal the commandSize indicator.
     result = UINT32_Unmarshal(
         &commandSize, &command.parameterBuffer, &command.parameterSize);
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 2\n");  // TODO: remove [DEBUG]
         goto Cleanup;
+    }
     // On a TPM that receives bytes on a port, the number of bytes that were
     // received on that port is requestSize it must be identical to commandSize.
     // In addition, commandSize must not be larger than MAX_COMMAND_SIZE allowed
@@ -162,18 +177,32 @@ LIB_EXPORT void ExecuteCommand(
     if(commandSize != requestSize || commandSize > MAX_COMMAND_SIZE)
     {
         result = TPM_RC_COMMAND_SIZE;
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 3\n");  // TODO: remove [DEBUG]
         goto Cleanup;
     }
     // Unmarshal the command code.
     result = TPM_CC_Unmarshal(
         &command.code, &command.parameterBuffer, &command.parameterSize);
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 4\n");  // TODO: remove [DEBUG]
         goto Cleanup;
+    }
     // Check to see if the command is implemented.
     command.index = CommandCodeToCommandIndex(command.code);
     if(UNIMPLEMENTED_COMMAND_INDEX == command.index)
     {
         result = TPM_RC_COMMAND_CODE;
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 5\n");  // TODO: remove [DEBUG]
         goto Cleanup;
     }
 #if FIELD_UPGRADE_IMPLEMENTED == YES
@@ -182,6 +211,10 @@ LIB_EXPORT void ExecuteCommand(
     if(IsFieldUgradeMode() && (command.code != TPM_CC_FieldUpgradeData))
     {
         result = TPM_RC_UPGRADE;
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 6\n");  // TODO: remove [DEBUG]
         goto Cleanup;
     }
     else
@@ -193,6 +226,11 @@ LIB_EXPORT void ExecuteCommand(
            || (TPMIsStarted() && command.code == TPM_CC_Startup))
         {
             result = TPM_RC_INITIALIZE;
+            printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+                   result,
+                   TPM_RC_SUCCESS);  // TODO: remove [DEBUG]
+            printf(
+                "Result not success -> go to cleanup 7\n");  // TODO: remove [DEBUG]
             goto Cleanup;
         }
     // Start regular command process.
@@ -200,12 +238,25 @@ LIB_EXPORT void ExecuteCommand(
     // Parse Handle buffer.
     result = ParseHandleBuffer(&command);
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 8\n");  // TODO: remove [DEBUG]
         goto Cleanup;
+    }
     // All handles in the handle area are required to reference TPM-resident
     // entities.
     result = EntityGetLoadStatus(&command);
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                             // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 9\n");  // TODO: remove [DEBUG]
+
         goto Cleanup;
+    }
     // Authorization session handling for the command.
     ClearCpRpHashes(&command);
     if(command.tag == TPM_ST_SESSIONS)
@@ -215,7 +266,14 @@ LIB_EXPORT void ExecuteCommand(
                                   &command.parameterBuffer,
                                   &command.parameterSize);
         if(result != TPM_RC_SUCCESS)
+        {
+            printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+                   result,
+                   TPM_RC_SUCCESS);  // TODO: remove [DEBUG]
+            printf(
+                "Result not success -> go to cleanup 10\n");  // TODO: remove [DEBUG]
             goto Cleanup;
+        }
         // Perform sanity check on the unmarshaled value. If it is smaller than
         // the smallest possible session or larger than the remaining size of
         // the command, then it is an error. NOTE: This check could pass but the
@@ -223,8 +281,15 @@ LIB_EXPORT void ExecuteCommand(
         // sessions are unmarshaled.
         if(command.authSize < 9 || command.authSize > command.parameterSize)
         {
-            result = TPM_RC_SIZE;
-            goto Cleanup;
+            {
+                result = TPM_RC_SIZE;
+                printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+                       result,
+                       TPM_RC_SUCCESS);  // TODO: remove [DEBUG]
+                printf(
+                    "Result not success -> go to cleanup 11\n");  // TODO: remove [DEBUG]
+                goto Cleanup;
+            }
         }
         command.parameterSize -= command.authSize;
 
@@ -234,7 +299,14 @@ LIB_EXPORT void ExecuteCommand(
         // first byte of the parameters.
         result = ParseSessionBuffer(&command);
         if(result != TPM_RC_SUCCESS)
+        {
+            printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+                   result,
+                   TPM_RC_SUCCESS);  // TODO: remove [DEBUG]
+            printf(
+                "Result not success -> go to cleanup 12\n");  // TODO: remove [DEBUG]
             goto Cleanup;
+        }
     }
     else
     {
@@ -244,7 +316,14 @@ LIB_EXPORT void ExecuteCommand(
         // return an error.
         result = CheckAuthNoSession(&command);
         if(result != TPM_RC_SUCCESS)
+        {
+            printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+                   result,
+                   TPM_RC_SUCCESS);  // TODO: remove [DEBUG]
+            printf(
+                "Result not success -> go to cleanup 13\n");  // TODO: remove [DEBUG]
             goto Cleanup;
+        }
     }
     // Set up the response buffer pointers. CommandDispatch will marshal the
     // response parameters starting at the address in command.responseBuffer.
@@ -263,7 +342,13 @@ LIB_EXPORT void ExecuteCommand(
     // buffer if the tag is TPM_RC_SESSIONS.
     result = CommandDispatcher(&command);
     if(result != TPM_RC_SUCCESS)
+    {
+        printf("Result(=0x%08x) != TPM_RC_SUCCESS(=0x%06x)\n",
+               result,
+               TPM_RC_SUCCESS);                              // TODO: remove [DEBUG]
+        printf("Result not success -> go to cleanup 14\n");  // TODO: remove [DEBUG]
         goto Cleanup;
+    }
 
     // Build the session area at the end of the parameter area.
     BuildResponseSession(&command);

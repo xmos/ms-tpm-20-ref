@@ -62,11 +62,33 @@ typedef int SOCKET;
 #include "Platform_fp.h"
 #include "Simulator_fp.h"
 
-#define PURPOSE                    \
-  "TPM 2.0 Reference Simulator.\n" \
-  "Copyright (c) Microsoft Corporation. All rights reserved."
+#define PURPOSE                      \
+    "TPM 2.0 Reference Simulator.\n" \
+    "Copyright (c) Microsoft Corporation. All rights reserved."
 
 #define DEFAULT_TPM_PORT 2321
+
+int DRBG_FIXED_SEED = 0;  // random seed - set by the command line (default value = 0)
+
+uint8_t DRBG_NistTestVector_Entropy[48];
+
+#define DRBG_TEST_INITIATE_ENTROPY_SEED_0_tmp                                     \
+    0x0d, 0x15, 0xaa, 0x80, 0xb1, 0x6c, 0x3a, 0x10, 0x90, 0x6c, 0xfe, 0xdb, 0x79, \
+        0x5d, 0xae, 0x0b, 0x5b, 0x81, 0x04, 0x1c, 0x5c, 0x5b, 0xfa, 0xcb, 0x37,   \
+        0x3d, 0x44, 0x40, 0xd9, 0x12, 0x0f, 0x7e, 0x3d, 0x6c, 0xf9, 0x09, 0x86,   \
+        0xcf, 0x52, 0xd8, 0x5d, 0x3e, 0x94, 0x7d, 0x8c, 0x06, 0x1f, 0x91
+
+#define DRBG_TEST_INITIATE_ENTROPY_SEED_1_tmp                                     \
+    0x0e, 0x15, 0xaa, 0x80, 0xb1, 0x6c, 0x3a, 0x10, 0x90, 0x6c, 0xfe, 0xdb, 0x79, \
+        0x5d, 0xae, 0x0b, 0x5b, 0x81, 0x04, 0x1c, 0x5c, 0x5b, 0xfa, 0xcb, 0x37,   \
+        0x3d, 0x44, 0x40, 0xd9, 0x12, 0x0f, 0x7e, 0x3d, 0x6c, 0xf9, 0x09, 0x86,   \
+        0xcf, 0x52, 0xd8, 0x5d, 0x3e, 0x94, 0x7d, 0x8c, 0x06, 0x1f, 0x91
+
+#define DRBG_TEST_INITIATE_ENTROPY_SEED_2_tmp                                     \
+    0x0f, 0x15, 0xaa, 0x80, 0xb1, 0x6c, 0x3a, 0x10, 0x90, 0x6c, 0xfe, 0xdb, 0x79, \
+        0x5d, 0xae, 0x0b, 0x5b, 0x81, 0x04, 0x1c, 0x5c, 0x5b, 0xfa, 0xcb, 0x37,   \
+        0x3d, 0x44, 0x40, 0xd9, 0x12, 0x0f, 0x7e, 0x3d, 0x6c, 0xf9, 0x09, 0x86,   \
+        0xcf, 0x52, 0xd8, 0x5d, 0x3e, 0x94, 0x7d, 0x8c, 0x06, 0x1f, 0x91
 
 // Information about command line arguments (does not include program name)
 static uint32_t     s_ArgsMask = 0;  // Bit mask of unmatched command line args
@@ -218,12 +240,13 @@ static void CmdLineParser_Done(const char* programName)
 // It registers the interface and starts listening for clients
 int main(int argc, char* argv[])
 {
-    bool manufacture = false;
-    int  PortNum     = DEFAULT_TPM_PORT;
+    bool manufacture  = false;
+    int  PortNum      = DEFAULT_TPM_PORT;
+    int  curr_arg_idx = 0;
 
     // Parse command line options
 
-    if(CmdLineParser_Init(argc, argv, 2))
+    if(CmdLineParser_Init(argc, argv, 4))
     {
         if(CmdLineParser_IsOptPresent("?", "?")
            || CmdLineParser_IsOptPresent("help", "h"))
@@ -234,10 +257,78 @@ int main(int argc, char* argv[])
         {
             manufacture = true;
         }
+
+        if(CmdLineParser_IsOptPresent("seed", "s"))
+        {
+            curr_arg_idx += 1;
+            for(int i = curr_arg_idx; i < argc; ++i)
+            {
+                if((strcmp(argv[i], "--seed") == 0) || (strcmp(argv[i], "-s") == 0))
+                {
+                    char* nptr      = NULL;
+                    DRBG_FIXED_SEED = (int)strtol(argv[i + 1], &nptr, 10);
+                    if((DRBG_FIXED_SEED == 1) || (DRBG_FIXED_SEED == 2))
+                    {
+                        printf("\nDRBG_FIXED_SEED = %d\n", DRBG_FIXED_SEED);
+                        s_ArgsMask ^= (i + 1);
+                        curr_arg_idx += 1;
+
+                        if(DRBG_FIXED_SEED == 2)
+                        {
+                            uint8_t init_entropy_seed_2_tmp[] = {
+                                DRBG_TEST_INITIATE_ENTROPY_SEED_2_tmp};
+
+                            memcpy(DRBG_NistTestVector_Entropy,
+                                   init_entropy_seed_2_tmp,
+                                   sizeof(init_entropy_seed_2_tmp));
+
+                            printf("\nDRBG_NistTestVector_Entropy[0]=0x%x\n\n",
+                                   DRBG_NistTestVector_Entropy[0]);
+                        }
+                        else if(DRBG_FIXED_SEED == 1)
+                        {
+                            uint8_t init_entropy_seed_1_tmp[] = {
+                                DRBG_TEST_INITIATE_ENTROPY_SEED_1_tmp};
+
+                            memcpy(DRBG_NistTestVector_Entropy,
+                                   init_entropy_seed_1_tmp,
+                                   sizeof(init_entropy_seed_1_tmp));
+
+                            printf("\nDRBG_NistTestVector_Entropy[0]=0x%x\n\n",
+                                   DRBG_NistTestVector_Entropy[0]);
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        fprintf(stderr,
+                                "Invalid numeric option for random seed = %d (only "
+                                "random seed = 1 and 2 is allowed!)\n\n",
+                                DRBG_FIXED_SEED);
+                        Usage(argv[0]);
+                    }
+                }
+            }
+        }
+        else
+        {
+            printf("\nDRBG_FIXED_SEED = %d\n", DRBG_FIXED_SEED);
+
+            uint8_t init_entropy_seed_0_tmp[] = {
+                DRBG_TEST_INITIATE_ENTROPY_SEED_0_tmp};
+
+            memcpy(DRBG_NistTestVector_Entropy,
+                   init_entropy_seed_0_tmp,
+                   sizeof(init_entropy_seed_0_tmp));
+
+            printf("\nDRBG_NistTestVector_Entropy[0]=0x%x\n\n",
+                   DRBG_NistTestVector_Entropy[0]);
+        }
+
         if(CmdLineParser_More())
         {
             int i;
-            for(i = 0; i < s_Argc; ++i)
+            for(i = curr_arg_idx; i < s_Argc; ++i)
             {
                 char* nptr    = NULL;
                 int   portNum = (int)strtol(s_Argv[i], &nptr, 0);
@@ -248,6 +339,7 @@ int main(int argc, char* argv[])
                     {
                         PortNum = portNum;
                         s_ArgsMask ^= 1 << i;
+                        curr_arg_idx += 1;
                         break;
                     }
                     fprintf(stderr, "Invalid numeric option %s\n\n", s_Argv[i]);

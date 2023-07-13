@@ -50,6 +50,7 @@
 #include "Platform.h"
 #include <setjmp.h>
 #include "ExecCommand_fp.h"
+#include <stdio.h>  // TODO: remove [DEBUG]
 
 jmp_buf s_jumpBuffer;
 
@@ -70,6 +71,13 @@ LIB_EXPORT void _plat__RunCommand(
 )
 {
     setjmp(s_jumpBuffer);
+    printf("Running command (size=%d bytes)...\n",
+           requestSize);  // TODO: remove [DEBUG]
+    for(int i = 0; i < requestSize; i++)
+    {
+        printf("%x ", request[i]);  // TODO: remove [DEBUG]
+    }
+    printf("\n");  // TODO: remove [DEBUG]
     ExecuteCommand(requestSize, request, responseSize, response);
 }
 

@@ -75,11 +75,13 @@
 // Pull in the test vector definitions and define the space
 #include "PRNG_TestVectors.h"
 
-const BYTE DRBG_NistTestVector_Entropy[]         = {DRBG_TEST_INITIATE_ENTROPY};
-const BYTE DRBG_NistTestVector_GeneratedInterm[] = {DRBG_TEST_GENERATED_INTERM};
+extern uint8_t DRBG_FIXED_SEED;
+extern uint8_t DRBG_NistTestVector_Entropy[48];
 
-const BYTE DRBG_NistTestVector_EntropyReseed[]   = {DRBG_TEST_RESEED_ENTROPY};
-const BYTE DRBG_NistTestVector_Generated[]       = {DRBG_TEST_GENERATED};
+const BYTE     DRBG_NistTestVector_GeneratedInterm[] = {DRBG_TEST_GENERATED_INTERM};
+
+const BYTE     DRBG_NistTestVector_EntropyReseed[]   = {DRBG_TEST_RESEED_ENTROPY};
+const BYTE     DRBG_NistTestVector_Generated[]       = {DRBG_TEST_GENERATED};
 
 //** Derivation Functions
 //*** Description

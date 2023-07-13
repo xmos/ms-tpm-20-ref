@@ -164,54 +164,84 @@ bool PlatformServer(SOCKET s)
         {
             case TPM_SIGNAL_POWER_ON:
                 _rpc__Signal_PowerOn(false);
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_POWER_ON\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_POWER_OFF:
                 _rpc__Signal_PowerOff();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_POWER_OFF\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_RESET:
                 _rpc__Signal_PowerOn(true);
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_RESET\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_RESTART:
                 _rpc__Signal_Restart();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_RESTART\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_PHYS_PRES_ON:
                 _rpc__Signal_PhysicalPresenceOn();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_PHYS_PRES_ON\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_PHYS_PRES_OFF:
                 _rpc__Signal_PhysicalPresenceOff();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_PHYS_PRES_OFF\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_CANCEL_ON:
                 _rpc__Signal_CancelOn();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_CANCEL_ON\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_CANCEL_OFF:
                 _rpc__Signal_CancelOff();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_CANCEL_OFF\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_NV_ON:
                 _rpc__Signal_NvOn();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_NV_ON\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_NV_OFF:
                 _rpc__Signal_NvOff();
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_NV_OFF\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_KEY_CACHE_ON:
                 _rpc__RsaKeyCacheControl(true);
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_KEY_CACHE_ON\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SIGNAL_KEY_CACHE_OFF:
                 _rpc__RsaKeyCacheControl(false);
+                printf(
+                    "\n[PlatformServer] TPM_SIGNAL_KEY_CACHE_OFF\n");  // TODO: remove [DEBUG]
                 break;
             case TPM_SESSION_END:
                 // Client signaled end-of-session
                 TpmEndSimulation();
+                printf(
+                    "\n[PlatformServer] TPM_SESSION_END\n");  // TODO: remove [DEBUG]
                 return true;
             case TPM_STOP:
                 // Client requested the simulator to exit
+                printf("\n[PlatformServer] TPM_STOP\n");  // TODO: remove [DEBUG]
                 return false;
             case TPM_TEST_FAILURE_MODE:
                 _rpc__ForceFailureMode();
+                printf("\n[PlatformServer] TPM_TEST_FAILURE_MODE\n");
                 break;
             case TPM_GET_COMMAND_RESPONSE_SIZES:
                 OK = WriteVarBytes(
                     s, (char*)&CommandResponseSizes, sizeof(CommandResponseSizes));
                 memset(&CommandResponseSizes, 0, sizeof(CommandResponseSizes));
+                printf(
+                    "\n[PlatformServer] TPM_GET_COMMAND_RESPONSE_SIZES\n");  // TODO: remove [DEBUG]
                 if(!OK)
                     return true;
                 break;
@@ -220,6 +250,8 @@ bool PlatformServer(SOCKET s)
                 uint32_t actHandle;
                 OK = ReadUINT32(s, &actHandle);
                 WriteUINT32(s, _rpc__ACT_GetSignaled(actHandle));
+                printf(
+                    "\n[PlatformServer] TPM_ACT_GET_SIGNALED\n");  // TODO: remove [DEBUG]
                 break;
             }
             default:
@@ -254,7 +286,7 @@ DWORD WINAPI PlatformSvcRoutine(LPVOID port)
     // connection until the prior connection drops.
     do
     {
-        printf("Platform server listening on port %d\n", PortNumber);
+        printf("\nPlatform server listening on port %d\n", PortNumber);
 
         // blocking accept
         length       = sizeof(HerAddress);
@@ -264,7 +296,9 @@ DWORD WINAPI PlatformSvcRoutine(LPVOID port)
             printf("Accept error.  Error is 0x%x\n", WSAGetLastError());
             return (DWORD)-1;
         }
-        printf("Client accepted\n");
+        printf("\nClient accepted\n");
+        printf("\n\n###############################################################"
+               "\n\n");  // TODO: remove [DEBUG]
 
         // normal behavior on client disconnection is to wait for a new client
         // to connect
@@ -336,7 +370,7 @@ int RegularCommandService(int PortNumber)
     // a new connection until the prior connection drops.
     do
     {
-        printf("TPM command server listening on port %d\n", PortNumber);
+        printf("\nTPM command server listening on port %d\n", PortNumber);
 
         // blocking accept
         length       = sizeof(HerAddress);
@@ -346,7 +380,7 @@ int RegularCommandService(int PortNumber)
             printf("Accept error.  Error is 0x%x\n", WSAGetLastError());
             return -1;
         }
-        printf("Client accepted\n");
+        printf("\nClient accepted\n");
 
         // normal behavior on client disconnection is to wait for a new client
         // to connect
@@ -618,6 +652,7 @@ bool TpmServer(SOCKET s)
     //
     for(;;)
     {
+        printf("\n[TPMServer]\n");
         OK = ReadBytes(s, (char*)&Command, 4);
         // client disconnected (or other error).  We stop processing this client
         // and return to our caller who can stop the server or listen for another
