@@ -99,6 +99,19 @@ LIB_EXPORT void ExecuteCommand(
     UINT32 maxResponse = *responseSize;
     TPM_RC result;  // return code for the command
 
+#if MAX_COMMAND_SIZE < 6 || MAX_COMMAND_SIZE > UINT_MAX - 1 \
+    || MAX_COMMAND_SIZE > INT32_MAX - 1
+#  error bad MAX_COMMAND_SIZE
+#endif
+    // Protect the unmarshaling code from obscenely long requests. The
+    // preceding #error ensures that MAX_COMMAND_SIZE + 1 fits in both an INT32
+    // (used by the unmarshaling code) and an unsigned int (the argument type
+    // of TpmFailureMode).
+    if(requestSize > MAX_COMMAND_SIZE)
+    {
+        requestSize = MAX_COMMAND_SIZE + 1;
+    }
+
     // This next function call is used in development to size the command and response
     // buffers. The values printed are the sizes of the internal structures and
     // not the sizes of the canonical forms of the command response structures. Also,
@@ -351,7 +364,11 @@ LIB_EXPORT void ExecuteCommand(
     }
 
     // Build the session area at the end of the parameter area.
-    BuildResponseSession(&command);
+    result = BuildResponseSession(&command);
+    if(result != TPM_RC_SUCCESS)
+    {
+        goto Cleanup;
+    }
 
 Cleanup:
     if(g_clearOrderly == TRUE && NV_IS_ORDERLY)
